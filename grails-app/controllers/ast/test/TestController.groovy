@@ -2,10 +2,11 @@ package ast.test
 
 import test.BarEvent
 import test.FooEvent
+import test.system.events.SystemEventBus
 
 class TestController {
 
-    def systemEventBus
+    SystemEventBus systemEventBus
 
     def index() {
     }
