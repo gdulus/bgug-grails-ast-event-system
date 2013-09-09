@@ -17,7 +17,7 @@ import test.system.events.SystemEventListener;
 
 import java.util.Map;
 
-@GroovyASTTransformation(phase = CompilePhase.SEMANTIC_ANALYSIS)
+@GroovyASTTransformation(phase = CompilePhase.CANONICALIZATION)
 final public class OnSystemEventASTTransformation implements ASTTransformation {
 
     private static final String MAPPING_FIELD_NAME = "SYSTEM_EVENTS_MAPPING";
@@ -26,21 +26,28 @@ final public class OnSystemEventASTTransformation implements ASTTransformation {
         if (!isValid(astNodes)) {
             System.out.println("[OnSystemEvent]: invalid node, leave.");
         }
-
-        // get basic data
-        final MethodNode methodNode = (MethodNode) astNodes[1];
-        final ClassNode declaringClass = methodNode.getDeclaringClass();
-        final Parameter[] parameters = methodNode.getParameters();
-        final String eventFullName = parameters[0].getOriginType().getName();
+        // ---------------------------------------------------------------------
+        // 1) GET BASIC DATA
+        //
+        final MethodNode methodNode = (MethodNode) astNodes[1];                 // annotated method
+        final ClassNode declaringClass = methodNode.getDeclaringClass();        // class where the annotated method is declared
+        final Parameter[] parameters = methodNode.getParameters();              // list of parameters of the annotated method
+        final String eventFullName = parameters[0].getOriginType().getName();   // full name of a event class
+        // just some logging ...
         final String methodName = methodNode.getName();
         final String callbackFullName = declaringClass.getName() + "#" + methodName + "(" + parameters[0].getType() + ")";
-
         System.out.println("[OnSystemEvent]: registering " + callbackFullName + ") listener");
-        // get mapping field
-        final FieldNode mapping = getMappingField(declaringClass);
-        // add mapping
+        // ---------------------------------------------------------------------
+        // 2) GET MAPPING FIELD, IF NOT EXISTS CREATE IT
+        //
+        final FieldNode mapping = getOrCreateMappingField(declaringClass);
+        // ---------------------------------------------------------------------
+        // 3) ADD TO MAPPING FIELD KEY = FULL NAME OF THE EVENT, VALUE = NAME OF THE CALLBACK METHOD
+        //
         ((MapExpression) mapping.getInitialValueExpression()).addMapEntryExpression(new ConstantExpression(eventFullName), new ConstantExpression(methodName));
-        // implement interface
+        // ---------------------------------------------------------------------
+        // 4) IMPLEMENT SystemEventListener INTERFACE IF NOT EXISTS
+        //
         implementSystemEventListenerInterfaceIfNotExists(declaringClass, mapping);
     }
 
@@ -52,7 +59,7 @@ final public class OnSystemEventASTTransformation implements ASTTransformation {
             && astNodes[0] instanceof AnnotationNode);
     }
 
-    private FieldNode getMappingField(final ClassNode classNode) {
+    private FieldNode getOrCreateMappingField(final ClassNode classNode) {
         FieldNode mappingField = classNode.getDeclaredField(MAPPING_FIELD_NAME);
 
         if (mappingField == null) {

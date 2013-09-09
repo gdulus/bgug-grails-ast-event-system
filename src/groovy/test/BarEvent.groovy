@@ -4,7 +4,7 @@ import test.system.events.SystemEvent
 
 class BarEvent extends SystemEvent {
 
-    def BarEvent(Object source) {
+    BarEvent(Object source) {
         super(source)
     }
 }

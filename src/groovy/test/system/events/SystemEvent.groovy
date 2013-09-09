@@ -4,7 +4,8 @@ import org.springframework.context.ApplicationEvent
 
 abstract class SystemEvent extends ApplicationEvent {
 
-    def SystemEvent(Object source) {
+    SystemEvent(Object source) {
         super(source)
     }
 }
+
